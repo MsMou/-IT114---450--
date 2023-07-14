@@ -165,7 +165,7 @@ public enum Server {
     }
 
     /**
-     * Returns Rooms with names having a partial match with query.
+     * Returns Rooms with names having a partial matches with query.
      * 
      * @param query
      * @param limit The maximum records to return

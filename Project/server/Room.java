@@ -183,7 +183,7 @@ public class Room implements AutoCloseable {
         client.disconnect();
         room.removeClient(client);
     }
-    //creating Format 1 and Format 2
+    //creating Format 1 and Format 2  with /roll commad
     private void rollOnce(ServerThread client, String[] rollPart1) {
             if (rollPart1.length == 2) {
                 if (rollPart1[1].contains("d")) {

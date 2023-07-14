@@ -32,7 +32,7 @@ public class Payload implements Serializable {
         return clientName;
     }
 /*Assign the name of the clients (clientName)
- to the Payload object */
+ to the Payload objects */
     public void setClientName(String clientName) {
         this.clientName = clientName;
     }
