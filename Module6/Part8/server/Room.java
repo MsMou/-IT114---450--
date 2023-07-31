@@ -327,19 +327,19 @@ public class Room implements AutoCloseable {
 		}
 		long from = (sender == null) ? Constants.DEFAULT_CLIENT_ID : sender.getClientId();
 		  if (message.startsWith("@")) {
-        // Extract the recipient's username from the message
+        // Pull the  username from the message privately
         String[] parts = message.split("\\s+", 2); // Split the message at the first space
         if (parts.length >= 2) {
-            String recipientUsername = parts[0].substring(1); // Remove the "@" symbol
-            String privateMessage = parts[1];
-            ServerThread recipient = findUser(recipientUsername);
-            if (recipient != null) {
-                // Send the private message to both the sender and recipient
-                sendMessage(sender, "To @" + recipientUsername + ": " + privateMessage);
-                sendMessage(recipient, "From @" + sender.getClientName() + ": " + privateMessage);
+            String whisperUser = parts[0].substring(1); // Remove the "@" symbol
+            String privateMess = parts[1];
+            ServerThread wUser = findUser(whisperUser);
+            if (whisperUser != null) {
+                // Send a private message to both the sender and targett user
+                sendMessage(sender, "To @" + whisperUser + ": " + privateMess);
+                sendMessage(wUser, "From @" + sender.getClientName() + ": " + privateMess);
 			return;
             } else {
-                sendMessage(sender, "User @" + recipientUsername + " not found.");
+                sendMessage(sender, "User @" + whisperUser + " not found.");
             }
             return; // Do not broadcast the private message
         }
