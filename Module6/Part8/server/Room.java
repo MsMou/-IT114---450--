@@ -9,10 +9,13 @@ import java.util.logging.Logger;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.io.*;
+import java.util.*;
 
 import Module6.Part8.common.Constants;
 
 public class Room implements AutoCloseable {
+	private Set<String> mutedClients = new HashSet<>();
 	private String name;
 	private List<ServerThread> clients = Collections.synchronizedList(new ArrayList<ServerThread>());
 	private boolean isRunning = false;
@@ -85,6 +88,34 @@ public class Room implements AutoCloseable {
 			close();
 		}
 	}
+	 // mute list code
+	
+	private void saveMuteList() {
+        try (ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream("mutedClients.dat"))) {
+            outputStream.writeObject(mutedClients);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+	
+	@SuppressWarnings("unchecked")
+	private void loadMuteList() {
+    try (ObjectInputStream inputStream = new ObjectInputStream(new FileInputStream("mutedClients.dat"))) {
+        Object object = inputStream.readObject();
+        if (object instanceof Set) {
+            mutedClients = (Set<String>) object; // Use the 'object' variable here
+        } else {
+            // Handle unexpected object type gracefully
+            System.err.println("Unexpected object type found in mutedClients.dat");
+        }
+    } catch (IOException | ClassNotFoundException e) {
+        e.printStackTrace();
+    }
+}
+	@SuppressWarnings("unchecked")
+    private static <T> T readObject(ObjectInputStream inputStream) throws IOException, ClassNotFoundException {
+        return (T) inputStream.readObject();
+    }
 
 	/***
 	 * Helper function to process messages to trigger different functionality.
@@ -176,31 +207,46 @@ public class Room implements AutoCloseable {
 	}
 
 	protected static void disconnectClient(ServerThread client, Room room) {
+
 		client.setCurrentRoom(null);
 		client.disconnect();
 		room.removeClient(client);
 	}
+
+	//muted client code
 	//This method is to mute the target user
 	private void muteUser(ServerThread client, String clientMute) {
         ServerThread cIsMute = findUser(clientMute);
-        if (cIsMute != null) {
-            cIsMute.muteUser(client.getClientName());
-            sendMessage(client, clientMute + " is now muted.");
-        } else {
-            sendMessage(client, clientMute+ " not found or already muted.");
-        }
-    }
+		if (cIsMute != null) {
+			cIsMute.muteUser(client.getClientName()); // Mute the target client
+			sendMessage(client, clientMute + " is now muted."); // Notify the muting client
+			sendMessageToTarget(cIsMute, "You have been muted by " + client.getClientName()); // Notify the target client that they have been muted
+			synchronized (clients) {
+				if (!clients.contains(cIsMute)) {
+					clients.add(cIsMute);  // Add back to broadcasting list
+				}
+			}
+		} else {
+			sendMessage(client, clientMute + " not found or already muted.");
+		}
+	}
+	//unmute client code 
 	//This method unmute the target user
 	 private void unmuteUser(ServerThread client, String clientUnmute) {
         ServerThread cIsUnmute = findUser(clientUnmute);
-        if (cIsUnmute != null) {
-            cIsUnmute.unmuteUser(client.getClientName());
-            sendMessage(client, clientUnmute + " is now unmuted.");
-        } else {
-            sendMessage(client, clientUnmute+ " not found or already unmuted.");
-        }
-    }
-	
+		if (cIsUnmute != null) {
+		cIsUnmute.unmuteUser(client.getClientName()); // Unmute the target client
+		sendMessage(client, clientUnmute + " is now unmuted."); // Notify the muting client
+		sendMessageToTarget(cIsUnmute, "You have been unmuted by " + client.getClientName()); // Notify the target client that they have been muted
+		synchronized (clients) {
+			if (!clients.contains(cIsUnmute)) {
+				clients.add(cIsUnmute);  // Add back to broadcasting list
+			}
+		}
+	} else {
+		sendMessage(client, clientUnmute + " not found or already muted.");
+	}
+}
 	private ServerThread findUser(String username) {
         // Search for the user with the specified username in the list of connected clients
         // and return the ServerThread if found.
@@ -357,7 +403,25 @@ public class Room implements AutoCloseable {
 			}
 		}
 	}
-	}
+}
+	
+	private synchronized void sendMessageToTarget(ServerThread targetClient, String message) {
+    if (!isRunning) {
+        return;
+    }
+    
+    long from = (targetClient == null) ? Constants.DEFAULT_CLIENT_ID : targetClient.getClientId();
+    synchronized (clients) {
+        boolean messageSent = targetClient.sendMessage(from, message);
+        if (!messageSent) {
+            // Handle the case where the message couldn't be sent to the target client
+            // This might involve removing the target client or performing other actions
+            // based on your application's requirements.
+            // handleTargetClientDisconnect(targetClient);
+        }
+    }
+}
+
 	protected synchronized void sendUserListToClient(ServerThread receiver) {
 		logger.log(Level.INFO, String.format("Room[%s] Syncing client list of %s to %s", getName(), clients.size(),
 				receiver.getClientName()));

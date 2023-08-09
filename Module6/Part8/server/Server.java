@@ -209,6 +209,7 @@ public enum Server {
     }
 
     public static void main(String[] args) {
+
         System.out.println("Starting Server");
         Server server = Server.INSTANCE;
         int port = 3000;
