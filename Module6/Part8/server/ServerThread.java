@@ -6,8 +6,6 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 
@@ -28,21 +26,26 @@ public class ServerThread extends Thread {
     private Room currentRoom;
     private static Logger logger = Logger.getLogger(ServerThread.class.getName());
     private long myId;
+    
+
     //1
     private Set<String> uMuted = new HashSet<>();
-    //2
-    public boolean isMuted(String username) {
-        return uMuted.contains(username);
+    
+    
+    
+        //2
+    public boolean isMuted(String clientMute) {
+        return uMuted.contains(clientMute);
     }
     //3
-    public void muteUser(String username) {
-        if (!uMuted.contains(username)) {
-            uMuted.add(username);
+    public void muteUser(String clientMute) {
+        if (!uMuted.contains(clientMute)) {
+            uMuted.add(clientMute);
         }
     }
 
-    public void unmuteUser(String username) {
-        uMuted.remove(username);
+    public void unmuteUser(String clientMute) {
+        uMuted.remove(clientMute);
     }
     
     public void setClientId(long id) {
@@ -83,6 +86,9 @@ public class ServerThread extends Thread {
 
     protected synchronized Room getCurrentRoom() {
         return currentRoom;
+    }
+    public Socket getClientSocket() {
+        return client;
     }
 
     protected synchronized void setCurrentRoom(Room room) {
